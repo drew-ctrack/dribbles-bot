@@ -1,0 +1,60 @@
+function playVid(connection, message) {
+  var server = servers[message.guild.id];
+
+  server.dispatcher = connection.playStream(YTDL(server.queue[0], {filter: "audioonly"}));
+  server.queue.shift();
+  server.dispatcher.on("end", function() {
+    if (server.queue[0]) play(connection, message);
+  })
+}
+
+
+switch (args) {
+  case "play":
+    if (!args[1]) {
+      message.channel.send("Please provide a link.");
+      return;
+    }
+
+    if (!message.member.voiceChannel) {
+      message.channel.send("Please join a voice channel first.");
+      return;
+    }
+
+    if (!servers[message.guild.id]) servers[message.guild.id] = {
+      queue: []
+    }
+
+    var server = servers[message.guild.id];
+
+    console.log(args[1]);
+
+    server.queue.push(args[1]);
+
+    if (!message.guild.voiceConnection) message.member.voiceChannel.join().then(function(connection){
+      playVid(connection, message);
+    })
+    break;
+}
+
+
+var voiceChannel = message.member.voiceChannel;
+if(!voiceChannel) return message.channel.send("Please enter a vocie channel first.");
+
+try {
+  var connection = await voiceChannel.join();
+} catch (error) {
+  console.error('Could not join voice channel.');
+}
+
+
+
+var dispatcher = connection.playStream(ytdl(args[1]))
+    .on('end', () => {
+      console.log("Song ended.");
+    })
+    .on('error', error => {
+      console.error(error);
+    });
+dispatcher.setVolumeLogarithmic(5 / 5);
+}
